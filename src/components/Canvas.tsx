@@ -14,7 +14,13 @@ const useStyles = makeStyles({
     media: {
         height: 150
     }
-})
+});
+
+const clamp = (num: number) => {
+    if (num < 0) return 0;
+    if (num > 255) return 255;
+    return num;
+}
 
 export default function CanvasImage({data, img}: {width: number, height: number, data: string, img: HTMLImageElement}) {
     const classes = useStyles();
@@ -65,6 +71,9 @@ export default function CanvasImage({data, img}: {width: number, height: number,
             case 'blackNWhite':
                 blackNWhiteFilter(imgData, ctx);
                 break;
+            case 'sepia':
+                sepia(imgData, ctx);
+                break;
             default:
                 break;
         }
@@ -90,6 +99,27 @@ export default function CanvasImage({data, img}: {width: number, height: number,
             }
         }
 
+        ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
+    }
+
+    const sepia = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
+                const pos = (y * width + x) * 4;
+
+                const r: number = imgData.data[pos];
+                const g: number = imgData.data[pos + 1];
+                const b: number = imgData.data[pos + 2];
+
+                const newR = clamp((r * 0.393) + (g * 0.769) + (b * 0.189));
+                const newG = clamp((r * 0.349) + (g * 0.686) + (b * 0.168));
+                const newB = clamp((r * 0.272) + (g * 0.534) + (b * 0.131));
+
+                imgData.data[pos] = newR;
+                imgData.data[pos + 1] = newG;
+                imgData.data[pos + 2] = newB;
+            }
+        }
         ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
     }
 
@@ -127,14 +157,14 @@ export default function CanvasImage({data, img}: {width: number, height: number,
                         </CardActionArea>
                     </Card>
                     <Card className={classes.card}>
-                        <CardActionArea onClick={() => applyFilter('blackNWhite')}>
+                        <CardActionArea onClick={() => applyFilter('sepia')}>
                             <CardMedia
                                 image={"http://placekitten.com/200/300"}
                                 className={classes.media}
                             />
                             <CardContent>
                                 <Typography variant={"caption"}>
-                                    Black 'n White
+                                    Sepia
                                 </Typography>
                             </CardContent>
                         </CardActionArea>
