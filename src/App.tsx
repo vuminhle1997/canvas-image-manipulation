@@ -19,7 +19,6 @@ const useStyles = makeStyles({
 function App() {
     const classes = useStyles();
     const [ imageFile, setImageFile ] = useState<File | null>(null);
-    const [ parsedFile, setParsedFile ] = useState<string | ArrayBuffer | null>(null);
     const [ srcImg, setSrcImg ] = useState<HTMLImageElement | null>(null);
 
     useEffect(() => {
@@ -27,10 +26,11 @@ function App() {
 
         loadImg.src = BLACKPINK;
         loadImg.onload = (e: Event) => {
-            console.log(loadImg);
             setSrcImg(loadImg);
         }
 
+        const file = new File([new ArrayBuffer(1)], 'default.jpeg', {type: 'image/jpeg'});
+        setImageFile(file);
     }, []);
 
     const handleFile = async(event: ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +49,6 @@ function App() {
             }
             reader.onload = async(event: ProgressEvent<FileReader>) => {
                 const value: any = reader.result;
-                setParsedFile(value);
 
                 const readedSrcImg: HTMLImageElement = new Image();
                 if (value !== null) {

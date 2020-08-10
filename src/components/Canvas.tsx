@@ -56,8 +56,9 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
     const [showSliders, setShowSliders] = useState<boolean>(true);
     const [brightness, setBrightness] = useState<number>(0);
     const [contrast, setContrast] = useState<number>(0);
-    const [saturation, setSaturation] = useState<number>(0);
     const [hue, setHue] = useState<number>(0);
+    const [saturation, setSaturation] = useState<number>(0);
+    const [v, setV] = useState<number>(0);
 
     useEffect(() => {
         if (!img) return;
@@ -226,7 +227,6 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
         a.href = canvasImage;
         a.download = `${fileName}-${filter}${fileTypeEnd}`;
 
-        console.log(a);
         a.click();
     }
 
