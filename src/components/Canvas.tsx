@@ -1,6 +1,7 @@
-import React, {useState, useEffect, useRef} from 'react';
-import {Card, CardActionArea, CardMedia, CardContent, Typography} from "@material-ui/core";
+import React, {useState, useEffect, useRef, ChangeEvent} from 'react';
+import {Card, CardActionArea, CardMedia, CardContent, Typography, Paper, Grid, Slider, Input} from "@material-ui/core";
 import {makeStyles} from "@material-ui/core/styles";
+import Brightness5Icon from '@material-ui/icons/Brightness5';
 
 const useStyles = makeStyles({
     root: {
@@ -13,6 +14,15 @@ const useStyles = makeStyles({
     },
     media: {
         height: 150
+    },
+    sliders: {
+        position: 'absolute',
+        top: '50px',
+        right: '50px',
+        width: '250px'
+    },
+    input: {
+        width: 50
     }
 });
 
@@ -30,6 +40,11 @@ export default function CanvasImage({data, img}: {width: number, height: number,
     const [ image, setImage ] = useState<HTMLImageElement>(img);
     const [ canvas, setCanvas ] = useState<HTMLCanvasElement>();
     const [ canvasContext, setCanvasContext ] = useState<CanvasRenderingContext2D | null>(null);
+
+    const [showSliders, setShowSliders] = useState<boolean>(true);
+    const [brightness, setBrightness] = useState<number>(0);
+    const [contrast, setContrast] = useState<number>(0);
+    const [saturation, setSaturation] = useState<number>(0);
 
     useEffect(() => {
         if (!image) return;
@@ -81,6 +96,9 @@ export default function CanvasImage({data, img}: {width: number, height: number,
 
     const originalFilter = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
         ctx.drawImage(img, 0, 0, img.width, img.height);
+        setBrightness(0);
+        setSaturation(0);
+        setContrast(0);
     }
 
     const blackNWhiteFilter = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
@@ -123,8 +141,164 @@ export default function CanvasImage({data, img}: {width: number, height: number,
         ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
     }
 
+    const handleBrightnessChange = (event: ChangeEvent<{}>, value: number | number[]) => {
+        if (typeof value === 'number')
+            setBrightness(value);
+
+        if (!canvasRef.current) return;
+
+        const ctx = canvas?.getContext("2d");
+        if (!ctx) return;
+
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+
+        const imgData: ImageData = ctx?.getImageData(0, 0, img.width, img.height);
+
+        applyBrightness(imgData, ctx);
+    }
+
+    const handleBrightnessInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+        if (typeof event.target.value === 'number')
+            setBrightness(event.target.value);
+        else
+            setBrightness(Number(event.target.value));
+    }
+
+    const applyBrightness = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
+                const pos = (y * width + x) * 4;
+
+                const r: number = imgData.data[pos];
+                const g: number = imgData.data[pos + 1];
+                const b: number = imgData.data[pos + 2];
+
+                const newR = clamp(r + brightness);
+                const newG = clamp(g + brightness);
+                const newB = clamp(b + brightness);
+
+                imgData.data[pos] = newR;
+                imgData.data[pos + 1] = newG;
+                imgData.data[pos + 2] = newB;
+            }
+        }
+        ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
+    }
+
+    const handleSaturationChange = (event: ChangeEvent<{}>, value: number | number[]) => {
+        if (typeof value === 'number')
+            setSaturation(value);
+
+        if (!canvasRef.current) return;
+
+        const ctx = canvas?.getContext("2d");
+        if (!ctx) return;
+
+        const imgData: ImageData = ctx?.getImageData(0, 0, img.width, img.height);
+
+        applySaturation(imgData, ctx);
+    }
+
+    const handleSaturationInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+        if (typeof event.target.value === 'number')
+            setSaturation(event.target.value);
+        else
+            setSaturation(Number(event.target.value));
+    }
+
+    const applySaturation = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
+        return;
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
+                const pos = (y * width + x) * 4;
+
+                const r: number = imgData.data[pos];
+                const g: number = imgData.data[pos + 1];
+                const b: number = imgData.data[pos + 2];
+
+                const newR = clamp(r + brightness);
+                const newG = clamp(g + brightness);
+                const newB = clamp(b + brightness);
+
+                imgData.data[pos] = newR;
+                imgData.data[pos + 1] = newG;
+                imgData.data[pos + 2] = newB;
+            }
+        }
+        ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
+    }
+
     return (
         <>
+            {
+                showSliders ? <Paper className={classes.sliders}>
+                    <Typography gutterBottom>
+                        Brightness
+                    </Typography>
+                    <Grid container spacing={2} alignItems={"center"}>
+                        <Grid item>
+                            <Brightness5Icon />
+                        </Grid>
+                        <Grid item xs>
+                            <Slider
+                                value={brightness}
+                                onChange={handleBrightnessChange}
+                                min={-100}
+                                max={100}
+                                aria-labelledby="input-slider"
+                            />
+                        </Grid>
+                        <Grid item>
+                            <Input
+                                value={brightness}
+                                onChange={handleBrightnessInput}
+                                className={classes.input}
+                                margin="dense"
+                                inputProps={{
+                                    step: 10,
+                                    min: -100,
+                                    max: 100,
+                                    type: 'number',
+                                    'aria-labelledby': 'input-slider',
+                                }}
+                            />
+                        </Grid>
+                    </Grid>
+                    <br/>
+                    <Typography gutterBottom>
+                        Saturation
+                    </Typography>
+                    <Grid container spacing={2} alignItems={"center"}>
+                        <Grid item>
+                            <Brightness5Icon />
+                        </Grid>
+                        <Grid item xs>
+                            <Slider
+                                value={saturation}
+                                onChange={handleSaturationChange}
+                                min={0}
+                                max={100}
+                                aria-labelledby="input-slider"
+                            />
+                        </Grid>
+                        <Grid item>
+                            <Input
+                                value={saturation}
+                                onChange={handleSaturationInput}
+                                className={classes.input}
+                                margin="dense"
+                                inputProps={{
+                                    step: 10,
+                                    min: 0,
+                                    max: 100,
+                                    type: 'number',
+                                    'aria-labelledby': 'input-slider',
+                                }}
+                            />
+                        </Grid>
+                    </Grid>
+                </Paper> : <></>
+            }
             {
                 img ? <canvas ref={canvasRef} width={width} height={height}/> : <div>Upload an image!</div>
             }
@@ -165,58 +339,6 @@ export default function CanvasImage({data, img}: {width: number, height: number,
                             <CardContent>
                                 <Typography variant={"caption"}>
                                     Sepia
-                                </Typography>
-                            </CardContent>
-                        </CardActionArea>
-                    </Card>
-                    <Card className={classes.card}>
-                        <CardActionArea onClick={() => applyFilter('blackNWhite')}>
-                            <CardMedia
-                                image={"http://placekitten.com/200/300"}
-                                className={classes.media}
-                            />
-                            <CardContent>
-                                <Typography variant={"caption"}>
-                                    Black 'n White
-                                </Typography>
-                            </CardContent>
-                        </CardActionArea>
-                    </Card>
-                    <Card className={classes.card}>
-                        <CardActionArea onClick={() => applyFilter('blackNWhite')}>
-                            <CardMedia
-                                image={"http://placekitten.com/200/300"}
-                                className={classes.media}
-                            />
-                            <CardContent>
-                                <Typography variant={"caption"}>
-                                    Black 'n White
-                                </Typography>
-                            </CardContent>
-                        </CardActionArea>
-                    </Card>
-                    <Card className={classes.card}>
-                        <CardActionArea onClick={() => applyFilter('blackNWhite')}>
-                            <CardMedia
-                                image={"http://placekitten.com/200/300"}
-                                className={classes.media}
-                            />
-                            <CardContent>
-                                <Typography variant={"caption"}>
-                                    Black 'n White
-                                </Typography>
-                            </CardContent>
-                        </CardActionArea>
-                    </Card>
-                    <Card className={classes.card}>
-                        <CardActionArea onClick={() => applyFilter('blackNWhite')}>
-                            <CardMedia
-                                image={"http://placekitten.com/200/300"}
-                                className={classes.media}
-                            />
-                            <CardContent>
-                                <Typography variant={"caption"}>
-                                    Black 'n White
                                 </Typography>
                             </CardContent>
                         </CardActionArea>
