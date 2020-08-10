@@ -1,11 +1,11 @@
 import React, {useState, useEffect, useRef, ChangeEvent} from 'react';
-import {Card, CardActionArea, CardMedia, CardContent, Typography, Paper, Grid, Slider, Input, Fab} from "@material-ui/core";
+import {Card, CardActionArea, CardMedia, CardContent, Typography, Paper, Grid, Slider, Input, Fab, Tooltip} from "@material-ui/core";
 import {makeStyles} from "@material-ui/core/styles";
 import Brightness5Icon from '@material-ui/icons/Brightness5';
 import RestoreIcon from '@material-ui/icons/Restore';
 import SaveIcon from '@material-ui/icons/Save';
 
-import { ImageFilterController } from './ImageFilterController';
+import { originalFilter, sepia, blackNWhiteFilter, applyBrightness } from './ImageFilterController';
 
 const useStyles = makeStyles({
     root: {
@@ -62,9 +62,10 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
         const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d");
         setCanvasContext(ctx);
 
-        img.onload = () => {
+        setTimeout(() => {
+            console.log('Rerender . . .')
             ctx?.drawImage(img, 0, 0, img.width, img.height);
-        }
+        }, 1)
         return () => {
             console.log('cleared');
         }
@@ -98,13 +99,13 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
 
         switch (filter) {
             case 'original':
-                ImageFilterController.originalFilter(img, imgData, canvasContext, width, height);
+                originalFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'blackNWhite':
-                ImageFilterController.blackNWhiteFilter(img, imgData, canvasContext, width, height);
+                blackNWhiteFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'sepia':
-                ImageFilterController.sepia(img, imgData, canvasContext, width, height);
+                sepia(img, imgData, canvasContext, width, height);
                 break;
             default:
                 break;
@@ -116,13 +117,13 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
 
         switch (filter) {
             case 'original':
-                ImageFilterController.originalFilter(img, imgData, canvasContext, width, height);
+                originalFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'blackNWhite':
-                ImageFilterController.blackNWhiteFilter(img, imgData, canvasContext, width, height);
+                blackNWhiteFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'sepia':
-                ImageFilterController.sepia(img, imgData, canvasContext, width, height);
+                sepia(img, imgData, canvasContext, width, height);
                 break;
             default:
                 break;
@@ -140,7 +141,7 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
 
         const imgData: ImageData = canvasContext?.getImageData(0, 0, img.width, img.height);
 
-        ImageFilterController.applyBrightness(img, imgData, canvasContext, width, height, brightness);
+        applyBrightness(img, imgData, canvasContext, width, height, brightness);
     }
 
     const handleBrightnessInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -262,16 +263,20 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
                     </Grid>
                     <br/>
                     <Grid container spacing={2} alignItems={"center"}>
-                        <Grid item>
-                            <Fab onClick={returnSettings}>
-                                <RestoreIcon />
-                            </Fab>
-                        </Grid>
-                        <Grid item>
-                            <Fab onClick={saveImage}>
-                                <SaveIcon />
-                            </Fab>
-                        </Grid>
+                        <Tooltip title="Return all settings">
+                            <Grid item>
+                                <Fab onClick={returnSettings}>
+                                    <RestoreIcon />
+                                </Fab>
+                            </Grid>
+                        </Tooltip>
+                        <Tooltip title="Save Image">
+                            <Grid item>
+                                <Fab onClick={saveImage}>
+                                    <SaveIcon />
+                                </Fab>
+                            </Grid>
+                        </Tooltip>
                     </Grid>
                 </Paper> : <></>
             }

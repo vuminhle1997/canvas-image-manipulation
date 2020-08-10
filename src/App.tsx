@@ -1,9 +1,11 @@
 import React, {ChangeEvent, useEffect, useState} from 'react';
 import './App.css';
 import CanvasImage from "./components/Canvas";
-import {Fab} from '@material-ui/core';
+import {Fab, Tooltip} from '@material-ui/core';
 import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 import {makeStyles} from "@material-ui/core/styles";
+
+import BLACKPINK from './static/img/blackpink.jpg';
 
 const useStyles = makeStyles({
     upload: {
@@ -21,8 +23,15 @@ function App() {
     const [ srcImg, setSrcImg ] = useState<HTMLImageElement | null>(null);
 
     useEffect(() => {
+        let loadImg = new Image();
 
-    }, [srcImg])
+        loadImg.src = BLACKPINK;
+        loadImg.onload = (e: Event) => {
+            console.log(loadImg);
+            setSrcImg(loadImg);
+        }
+
+    }, []);
 
     const handleFile = async(event: ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
@@ -55,12 +64,14 @@ function App() {
 
   return (
     <div className="App">
-        <Fab className={classes.upload} component={"label"}>
-            <CloudUploadIcon />
-            <input onChange={handleFile} type="file" accept={"image/*"} style={{display: 'none'}} />
-        </Fab>
+        <Tooltip title={"Upload Image"}>
+            <Fab className={classes.upload} component={"label"}>
+                <CloudUploadIcon />
+                <input onChange={handleFile} type="file" accept={"image/*"} style={{display: 'none'}} />
+            </Fab>
+        </Tooltip>
         {
-            typeof parsedFile === 'string' && srcImg !== null ? <CanvasImage file={imageFile} img={srcImg} /> : ''
+            srcImg !== null ? <CanvasImage file={imageFile} img={srcImg} /> : ''
         }
     </div>
   );
