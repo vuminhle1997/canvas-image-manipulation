@@ -4,8 +4,17 @@ import {makeStyles} from "@material-ui/core/styles";
 import Brightness5Icon from '@material-ui/icons/Brightness5';
 import RestoreIcon from '@material-ui/icons/Restore';
 import SaveIcon from '@material-ui/icons/Save';
+import ColorLensIcon from '@material-ui/icons/ColorLens';
+import OpacityIcon from '@material-ui/icons/Opacity';
 
-import { originalFilter, sepia, blackNWhiteFilter, applyBrightness } from './ImageFilterController';
+import {
+    originalFilter,
+    sepia,
+    grayscaleFilter,
+    vividFilter,
+    lowerSaturation,
+    applyHSVChanges
+} from './ImageFilterController';
 
 const useStyles = makeStyles({
     root: {
@@ -48,6 +57,7 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
     const [brightness, setBrightness] = useState<number>(0);
     const [contrast, setContrast] = useState<number>(0);
     const [saturation, setSaturation] = useState<number>(0);
+    const [hue, setHue] = useState<number>(0);
 
     useEffect(() => {
         if (!img) return;
@@ -94,18 +104,24 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
 
         if (!canvasContext) return;
 
-        const imgData: ImageData = canvasContext.getImageData(0, 0, img.width, img.height);
         canvasContext.drawImage(img, 0, 0, img.width, img.height);
+        const imgData: ImageData = canvasContext.getImageData(0, 0, img.width, img.height);
 
         switch (filter) {
             case 'original':
                 originalFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'blackNWhite':
-                blackNWhiteFilter(img, imgData, canvasContext, width, height);
+                grayscaleFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'sepia':
                 sepia(img, imgData, canvasContext, width, height);
+                break;
+            case 'vivid':
+                vividFilter(img, imgData, canvasContext, width, height);
+                break;
+            case 'london':
+                lowerSaturation(img, imgData, canvasContext, width, height);
                 break;
             default:
                 break;
@@ -120,20 +136,23 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
                 originalFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'blackNWhite':
-                blackNWhiteFilter(img, imgData, canvasContext, width, height);
+                grayscaleFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'sepia':
                 sepia(img, imgData, canvasContext, width, height);
+                break;
+            case 'vivid':
+                vividFilter(img, imgData, canvasContext, width, height);
+                break;
+            case 'london':
+                lowerSaturation(img, imgData, canvasContext, width, height);
                 break;
             default:
                 break;
         }
     }
-    
-    const handleBrightnessChange = (event: ChangeEvent<{}>, value: number | number[]) => {
-        if (typeof value === 'number')
-            setBrightness(value);
 
+    const applyHSVSettings = () => {
         if (!canvasContext) return;
 
         canvasContext.drawImage(img, 0, 0, img.width, img.height);
@@ -141,7 +160,26 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
 
         const imgData: ImageData = canvasContext?.getImageData(0, 0, img.width, img.height);
 
-        applyBrightness(img, imgData, canvasContext, width, height, brightness);
+        applyHSVChanges(img, imgData, canvasContext, width, height, hue, saturation, brightness, brightness);
+    }
+
+    const handleHueChange = (event: ChangeEvent<{}>, value: number | number[]) => {
+        if (typeof value === 'number')
+            setHue(value);
+    }
+
+    const handleHueInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+        if (typeof event.target.value === 'number')
+            setHue(event.target.value);
+        else
+            setHue(Number(event.target.value));
+    }
+    
+    const handleBrightnessChange = (event: ChangeEvent<{}>, value: number | number[]) => {
+        if (typeof value === 'number')
+            setBrightness(value);
+
+        applyHSVSettings();
     }
 
     const handleBrightnessInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -149,19 +187,15 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
             setBrightness(event.target.value);
         else
             setBrightness(Number(event.target.value));
+
+        applyHSVSettings();
     }
 
     const handleSaturationChange = (event: ChangeEvent<{}>, value: number | number[]) => {
         if (typeof value === 'number')
             setSaturation(value);
 
-        if (!canvasRef.current) return;
-
-        const ctx = canvas?.getContext("2d");
-        if (!ctx) return;
-
-        const imgData: ImageData = ctx?.getImageData(0, 0, img.width, img.height);
-
+        applyHSVSettings();
     }
 
     const handleSaturationInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -169,6 +203,8 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
             setSaturation(event.target.value);
         else
             setSaturation(Number(event.target.value));
+
+        applyHSVSettings();
     }
 
     const returnSettings = () => {
@@ -189,6 +225,8 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
         const a: HTMLAnchorElement = document.createElement("a");
         a.href = canvasImage;
         a.download = `${fileName}-${filter}${fileTypeEnd}`;
+
+        console.log(a);
         a.click();
     }
 
@@ -196,6 +234,40 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
         <>
             {
                 showSliders ? <Paper className={classes.sliders}>
+                    <Typography gutterBottom>
+                        Color spectrum
+                    </Typography>
+                    <Grid container spacing={2} alignItems={"center"}>
+                        <Grid item>
+                            <ColorLensIcon />
+                        </Grid>
+                        <Grid item xs>
+                            <Slider
+                                value={hue}
+                                onChange={handleHueChange}
+                                min={-1}
+                                max={1}
+                                step={0.1}
+                                aria-labelledby="input-slider"
+                            />
+                        </Grid>
+                        <Grid item>
+                            <Input
+                                value={hue}
+                                onChange={handleHueInput}
+                                className={classes.input}
+                                margin="dense"
+                                inputProps={{
+                                    step: 0.1,
+                                    min: -1,
+                                    max: 1,
+                                    type: 'number',
+                                    'aria-labelledby': 'input-slider',
+                                }}
+                            />
+                        </Grid>
+                    </Grid>
+                    <br/>
                     <Typography gutterBottom>
                         Brightness
                     </Typography>
@@ -234,13 +306,13 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
                     </Typography>
                     <Grid container spacing={2} alignItems={"center"}>
                         <Grid item>
-                            <Brightness5Icon />
+                            <OpacityIcon />
                         </Grid>
                         <Grid item xs>
                             <Slider
                                 value={saturation}
                                 onChange={handleSaturationChange}
-                                min={0}
+                                min={-100}
                                 max={100}
                                 aria-labelledby="input-slider"
                             />
@@ -306,7 +378,7 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
                             />
                             <CardContent>
                                 <Typography variant={"caption"}>
-                                    Black 'n White
+                                    Grayscale
                                 </Typography>
                             </CardContent>
                         </CardActionArea>
@@ -320,6 +392,32 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
                             <CardContent>
                                 <Typography variant={"caption"}>
                                     Sepia
+                                </Typography>
+                            </CardContent>
+                        </CardActionArea>
+                    </Card>
+                    <Card className={classes.card}>
+                        <CardActionArea onClick={() => applyFilter('vivid')}>
+                            <CardMedia
+                                image={"http://placekitten.com/200/300"}
+                                className={classes.media}
+                            />
+                            <CardContent>
+                                <Typography variant={"caption"}>
+                                    Vivid
+                                </Typography>
+                            </CardContent>
+                        </CardActionArea>
+                    </Card>
+                    <Card className={classes.card}>
+                        <CardActionArea onClick={() => applyFilter('london')}>
+                            <CardMedia
+                                image={"http://placekitten.com/200/300"}
+                                className={classes.media}
+                            />
+                            <CardContent>
+                                <Typography variant={"caption"}>
+                                    London
                                 </Typography>
                             </CardContent>
                         </CardActionArea>
