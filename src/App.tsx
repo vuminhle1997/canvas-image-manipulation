@@ -60,7 +60,7 @@ function App() {
             <input onChange={handleFile} type="file" accept={"image/*"} style={{display: 'none'}} />
         </Fab>
         {
-            typeof parsedFile === 'string' && srcImg !== null ? <CanvasImage img={srcImg} width={800} height={600} data={parsedFile}/> : ''
+            typeof parsedFile === 'string' && srcImg !== null ? <CanvasImage file={imageFile} img={srcImg} /> : ''
         }
     </div>
   );

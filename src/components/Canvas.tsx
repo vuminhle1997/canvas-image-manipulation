@@ -1,7 +1,11 @@
 import React, {useState, useEffect, useRef, ChangeEvent} from 'react';
-import {Card, CardActionArea, CardMedia, CardContent, Typography, Paper, Grid, Slider, Input} from "@material-ui/core";
+import {Card, CardActionArea, CardMedia, CardContent, Typography, Paper, Grid, Slider, Input, Fab} from "@material-ui/core";
 import {makeStyles} from "@material-ui/core/styles";
 import Brightness5Icon from '@material-ui/icons/Brightness5';
+import RestoreIcon from '@material-ui/icons/Restore';
+import SaveIcon from '@material-ui/icons/Save';
+
+import { ImageFilterController } from './ImageFilterController';
 
 const useStyles = makeStyles({
     root: {
@@ -19,44 +23,44 @@ const useStyles = makeStyles({
         position: 'absolute',
         top: '50px',
         right: '50px',
-        width: '250px'
+        width: '250px',
+        padding: "2em",
+        opacity: 0.45,
+        "&:hover": {
+            opacity: 1
+        }
     },
     input: {
         width: 50
     }
 });
 
-const clamp = (num: number) => {
-    if (num < 0) return 0;
-    if (num > 255) return 255;
-    return num;
-}
-
-export default function CanvasImage({data, img}: {width: number, height: number, data: string, img: HTMLImageElement}) {
+export default function CanvasImage({img, file}: {img: HTMLImageElement, file: File | null}) {
     const classes = useStyles();
     const canvasRef = React.useRef<HTMLCanvasElement>(null)
     const [ width, setWidth ] = useState<number>(window.innerWidth);
     const [ height, setHeight ] = useState<number>(window.innerHeight);
-    const [ image, setImage ] = useState<HTMLImageElement>(img);
     const [ canvas, setCanvas ] = useState<HTMLCanvasElement>();
     const [ canvasContext, setCanvasContext ] = useState<CanvasRenderingContext2D | null>(null);
 
+    const [filter, setFilter] = useState<string>('original');
     const [showSliders, setShowSliders] = useState<boolean>(true);
     const [brightness, setBrightness] = useState<number>(0);
     const [contrast, setContrast] = useState<number>(0);
     const [saturation, setSaturation] = useState<number>(0);
 
     useEffect(() => {
-        if (!image) return;
+        if (!img) return;
 
-        setHeight(image.height);
-        setWidth(image.width);
+        setHeight(img.height);
+        setWidth(img.width);
 
         if (!canvasRef.current) return;
 
         const canvas: HTMLCanvasElement  = canvasRef.current;
         setCanvas(canvas);
         const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d");
+        setCanvasContext(ctx);
 
         img.onload = () => {
             ctx?.drawImage(img, 0, 0, img.width, img.height);
@@ -67,94 +71,76 @@ export default function CanvasImage({data, img}: {width: number, height: number,
     }, []);
 
     useEffect(() => {
-        setImage(img);
+        reloadImg();
+    }, [img]);
 
-    }, [data])
+    const reloadImg = () => {
+        if (!canvasContext) return;
+
+        setTimeout(() => {
+            setHeight(img.height);
+            setWidth(img.width);
+            setFilter('original');
+            setBrightness(0);
+            setContrast(0);
+
+            canvasContext.drawImage(img, 0, 0, img.width, img.height);
+        }, 1);
+    }
 
     const applyFilter = (filter: string) => {
-        if (!canvasRef.current) return;
+        setFilter(filter);
 
-        const ctx = canvas?.getContext("2d");
-        if (!ctx) return;
+        if (!canvasContext) return;
 
-        const imgData: ImageData = ctx?.getImageData(0, 0, img.width, img.height);
+        const imgData: ImageData = canvasContext.getImageData(0, 0, img.width, img.height);
+        canvasContext.drawImage(img, 0, 0, img.width, img.height);
 
         switch (filter) {
             case 'original':
-                originalFilter(imgData, ctx);
+                ImageFilterController.originalFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'blackNWhite':
-                blackNWhiteFilter(imgData, ctx);
+                ImageFilterController.blackNWhiteFilter(img, imgData, canvasContext, width, height);
                 break;
             case 'sepia':
-                sepia(imgData, ctx);
+                ImageFilterController.sepia(img, imgData, canvasContext, width, height);
                 break;
             default:
                 break;
         }
     }
 
-    const originalFilter = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
-        ctx.drawImage(img, 0, 0, img.width, img.height);
-        setBrightness(0);
-        setSaturation(0);
-        setContrast(0);
-    }
+    const overhaulFilterApply = (filter: string, imgData: ImageData) => {
+        if (!canvasContext) return;
 
-    const blackNWhiteFilter = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
-        for (let x = 0; x < width; x++) {
-            for (let y = 0; y < height; y++) {
-                const pos = (y * width + x) * 4;
-
-                const r = imgData.data[pos];
-                const g = imgData.data[pos + 1];
-                const b = imgData.data[pos + 2];
-                const diff = (r + g + b) /3;
-
-                imgData.data[pos] = diff;
-                imgData.data[pos + 1] = diff;
-                imgData.data[pos + 2] = diff;
-            }
+        switch (filter) {
+            case 'original':
+                ImageFilterController.originalFilter(img, imgData, canvasContext, width, height);
+                break;
+            case 'blackNWhite':
+                ImageFilterController.blackNWhiteFilter(img, imgData, canvasContext, width, height);
+                break;
+            case 'sepia':
+                ImageFilterController.sepia(img, imgData, canvasContext, width, height);
+                break;
+            default:
+                break;
         }
-
-        ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
     }
-
-    const sepia = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
-        for (let x = 0; x < width; x++) {
-            for (let y = 0; y < height; y++) {
-                const pos = (y * width + x) * 4;
-
-                const r: number = imgData.data[pos];
-                const g: number = imgData.data[pos + 1];
-                const b: number = imgData.data[pos + 2];
-
-                const newR = clamp((r * 0.393) + (g * 0.769) + (b * 0.189));
-                const newG = clamp((r * 0.349) + (g * 0.686) + (b * 0.168));
-                const newB = clamp((r * 0.272) + (g * 0.534) + (b * 0.131));
-
-                imgData.data[pos] = newR;
-                imgData.data[pos + 1] = newG;
-                imgData.data[pos + 2] = newB;
-            }
-        }
-        ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
-    }
-
+    
     const handleBrightnessChange = (event: ChangeEvent<{}>, value: number | number[]) => {
         if (typeof value === 'number')
             setBrightness(value);
 
-        if (!canvasRef.current) return;
+        if (!canvasContext) return;
 
-        const ctx = canvas?.getContext("2d");
-        if (!ctx) return;
+        canvasContext.drawImage(img, 0, 0, img.width, img.height);
+        overhaulFilterApply(filter, canvasContext?.getImageData(0, 0, img.width, img.height));
 
-        ctx.drawImage(img, 0, 0, img.width, img.height);
+        const imgData: ImageData = canvasContext?.getImageData(0, 0, img.width, img.height);
 
-        const imgData: ImageData = ctx?.getImageData(0, 0, img.width, img.height);
-
-        applyBrightness(imgData, ctx);
+        ImageFilterController.applyBrightness(img, imgData, canvasContext, width, height, brightness);
     }
 
     const handleBrightnessInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -162,27 +148,6 @@ export default function CanvasImage({data, img}: {width: number, height: number,
             setBrightness(event.target.value);
         else
             setBrightness(Number(event.target.value));
-    }
-
-    const applyBrightness = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
-        for (let x = 0; x < width; x++) {
-            for (let y = 0; y < height; y++) {
-                const pos = (y * width + x) * 4;
-
-                const r: number = imgData.data[pos];
-                const g: number = imgData.data[pos + 1];
-                const b: number = imgData.data[pos + 2];
-
-                const newR = clamp(r + brightness);
-                const newG = clamp(g + brightness);
-                const newB = clamp(b + brightness);
-
-                imgData.data[pos] = newR;
-                imgData.data[pos + 1] = newG;
-                imgData.data[pos + 2] = newB;
-            }
-        }
-        ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
     }
 
     const handleSaturationChange = (event: ChangeEvent<{}>, value: number | number[]) => {
@@ -196,7 +161,6 @@ export default function CanvasImage({data, img}: {width: number, height: number,
 
         const imgData: ImageData = ctx?.getImageData(0, 0, img.width, img.height);
 
-        applySaturation(imgData, ctx);
     }
 
     const handleSaturationInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -206,26 +170,25 @@ export default function CanvasImage({data, img}: {width: number, height: number,
             setSaturation(Number(event.target.value));
     }
 
-    const applySaturation = (imgData: ImageData, ctx: CanvasRenderingContext2D) => {
-        return;
-        for (let x = 0; x < width; x++) {
-            for (let y = 0; y < height; y++) {
-                const pos = (y * width + x) * 4;
+    const returnSettings = () => {
+        if (!canvasContext) return;
 
-                const r: number = imgData.data[pos];
-                const g: number = imgData.data[pos + 1];
-                const b: number = imgData.data[pos + 2];
+        canvasContext.drawImage(img, 0, 0, img.width, img.height);
+        setSaturation(0);
+        setBrightness(0);
+    }
 
-                const newR = clamp(r + brightness);
-                const newG = clamp(g + brightness);
-                const newB = clamp(b + brightness);
+    const saveImage = () => {
+        if (!canvas || !file) return;
 
-                imgData.data[pos] = newR;
-                imgData.data[pos + 1] = newG;
-                imgData.data[pos + 2] = newB;
-            }
-        }
-        ctx.putImageData(imgData, 0, 0, 0, 0, img.width, img.height);
+        const canvasImage: string = canvas.toDataURL(file.type, 1.0);
+
+        const fileName: string = file.name.substring(0, file.name.indexOf('.'));
+        const fileTypeEnd: string = file.name.substring(file.name.indexOf('.'), file.name.length);
+        const a: HTMLAnchorElement = document.createElement("a");
+        a.href = canvasImage;
+        a.download = `${fileName}-${filter}${fileTypeEnd}`;
+        a.click();
     }
 
     return (
@@ -295,6 +258,19 @@ export default function CanvasImage({data, img}: {width: number, height: number,
                                     'aria-labelledby': 'input-slider',
                                 }}
                             />
+                        </Grid>
+                    </Grid>
+                    <br/>
+                    <Grid container spacing={2} alignItems={"center"}>
+                        <Grid item>
+                            <Fab onClick={returnSettings}>
+                                <RestoreIcon />
+                            </Fab>
+                        </Grid>
+                        <Grid item>
+                            <Fab onClick={saveImage}>
+                                <SaveIcon />
+                            </Fab>
                         </Grid>
                     </Grid>
                 </Paper> : <></>
