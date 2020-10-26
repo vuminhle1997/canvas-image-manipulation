@@ -1,7 +1,7 @@
 import React, {ChangeEvent, useEffect, useState} from 'react';
 import './App.css';
 import CanvasImage from "./components/Canvas";
-import {Fab, Tooltip} from '@material-ui/core';
+import {Container, Fab, Fade, Paper, Tooltip} from '@material-ui/core';
 import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 import {makeStyles} from "@material-ui/core/styles";
 
@@ -13,6 +13,14 @@ const useStyles = makeStyles({
         bottom: '15px',
         right: '15px',
         zIndex: 5
+    },
+    parent: {
+        height: "100%",
+        width: "100vw",
+        background: "rgba(0,0,0, .75)",
+        zIndex: 100,
+        position: "absolute",
+        top: 0
     }
 })
 
@@ -21,7 +29,10 @@ function App() {
     const [ imageFile, setImageFile ] = useState<File | null>(null);
     const [ srcImg, setSrcImg ] = useState<HTMLImageElement | null>(null);
 
+    const [ dev, setDev ] = useState<boolean>(true);
+
     useEffect(() => {
+        alert("App is still in WIP");
         let loadImg = new Image();
 
         loadImg.src = BLACKPINK;
