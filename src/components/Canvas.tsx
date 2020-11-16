@@ -23,7 +23,8 @@ const useStyles = makeStyles({
         flexDirection: 'row',
     },
     card: {
-        minWidth: '20vw'
+        minWidth: '20vw',
+        height: "20vh"
     },
     media: {
         height: 150
@@ -58,7 +59,6 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
     const [contrast, setContrast] = useState<number>(0);
     const [hue, setHue] = useState<number>(0);
     const [saturation, setSaturation] = useState<number>(0);
-    const [v, setV] = useState<number>(0);
 
     useEffect(() => {
         if (!img) return;
@@ -161,19 +161,7 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
 
         const imgData: ImageData = canvasContext?.getImageData(0, 0, img.width, img.height);
 
-        applyHSVChanges(img, imgData, canvasContext, width, height, hue, saturation, brightness, brightness);
-    }
-
-    const handleHueChange = (event: ChangeEvent<{}>, value: number | number[]) => {
-        if (typeof value === 'number')
-            setHue(value);
-    }
-
-    const handleHueInput = (event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-        if (typeof event.target.value === 'number')
-            setHue(event.target.value);
-        else
-            setHue(Number(event.target.value));
+        applyHSVChanges(img, imgData, canvasContext, width, height, hue, saturation, brightness);
     }
     
     const handleBrightnessChange = (event: ChangeEvent<{}>, value: number | number[]) => {
@@ -234,40 +222,6 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
         <>
             {
                 showSliders ? <Paper className={classes.sliders}>
-                    <Typography gutterBottom>
-                        Color spectrum
-                    </Typography>
-                    <Grid container spacing={2} alignItems={"center"}>
-                        <Grid item>
-                            <ColorLensIcon />
-                        </Grid>
-                        <Grid item xs>
-                            <Slider
-                                value={hue}
-                                onChange={handleHueChange}
-                                min={-1}
-                                max={1}
-                                step={0.1}
-                                aria-labelledby="input-slider"
-                            />
-                        </Grid>
-                        <Grid item>
-                            <Input
-                                value={hue}
-                                onChange={handleHueInput}
-                                className={classes.input}
-                                margin="dense"
-                                inputProps={{
-                                    step: 0.1,
-                                    min: -1,
-                                    max: 1,
-                                    type: 'number',
-                                    'aria-labelledby': 'input-slider',
-                                }}
-                            />
-                        </Grid>
-                    </Grid>
-                    <br/>
                     <Typography gutterBottom>
                         Brightness
                     </Typography>
@@ -353,8 +307,15 @@ export default function CanvasImage({img, file}: {img: HTMLImageElement, file: F
                 </Paper> : <></>
             }
             {
-                img ? <canvas ref={canvasRef} width={width} height={height}/> : <div>Upload an image!</div>
+                img ? <div style={{width: "100vw", height: "80vh"}}>
+                    <canvas style={{width: "auto", height: "100%"}} ref={canvasRef} width={width} height={height}/>
+                </div> : <div>Upload an image!</div>
             }
+
+
+
+
+
             {
                 img ? <div className={classes.root}>
                     <Card className={classes.card}>

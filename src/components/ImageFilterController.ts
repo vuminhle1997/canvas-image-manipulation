@@ -200,7 +200,7 @@ export const sepia = (img: HTMLImageElement, imgData: ImageData, ctx: CanvasRend
 }
 
 export const applyHSVChanges = (img: HTMLImageElement, imgData: ImageData, ctx: CanvasRenderingContext2D, width: number,
-                                height: number, hue: number, saturation: number, value: number, brightness: number) => {
+                                height: number, hue: number, saturation: number, brightness: number) => {
     let s = 1 + (saturation/100);
     for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
